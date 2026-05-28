@@ -8,7 +8,7 @@ https://solscan.io/tx/3TeBp5d6FkY3fvWCiG46CTtNrY9cWXNYEdqS56JmLcJhq714e6t3gvR6Xd
 ## Setup
 
 First, do:
-```git clone https://github.com/Trinityweb3/Flash-loan-using-Save-Finance```
+```git clone https://github.com/Trinityweb3/Flash-loan-impl-example```
 
 Second, create a .env file in the your project root.
 
