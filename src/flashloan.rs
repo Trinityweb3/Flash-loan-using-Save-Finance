@@ -14,6 +14,11 @@ pub async fn execute_flash_loan(
     rpc_url: &str,
     private_key_str: &str,
     loan_amount: u64,
+
+    program_id: Pubkey,
+    lending_market: Pubkey,
+    vault: Pubkey,
+    
     reserve_account: Pubkey,
     reserve_liquidity_supply: Pubkey,
     liquidity_mint: Pubkey
@@ -21,10 +26,6 @@ pub async fn execute_flash_loan(
     let client = RpcClient::new_with_commitment(rpc_url.to_string(), CommitmentConfig::confirmed());
     let payer = Keypair::from_base58_string(private_key_str);
     println!("Using wallet: {}", payer.pubkey());
-
-    let program_id = Pubkey::from_str("So1endDq2YkqhipRh3WViPa8hdiSpxWy6z3Z6tMCpAo")?;
-    let lending_market = Pubkey::from_str("4UpD2fh7xH3VP9QQaXtsS1YY3bxzWhtfpks7FatyKvdY")?;
-    let market_authority = Pubkey::from_str("DdZR6zRFiUt4S5mg7AV1uKB2z1f1WzcNYCaTEEWPAuby")?;
     
     let user_token_account = get_associated_token_address(&payer.pubkey(), &liquidity_mint);
 
@@ -42,7 +43,7 @@ pub async fn execute_flash_loan(
             AccountMeta::new(user_token_account, false),
             AccountMeta::new(reserve_account, false),
             AccountMeta::new_readonly(lending_market, false),
-            AccountMeta::new_readonly(market_authority, false),
+            AccountMeta::new_readonly(vault, false),
             AccountMeta::new_readonly(solana_sdk::sysvar::instructions::id(), false),
             AccountMeta::new_readonly(spl_token::id(), false),
         ],
