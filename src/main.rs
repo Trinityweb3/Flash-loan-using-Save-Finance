@@ -1,4 +1,8 @@
+mod types;
 mod flashloan;
+
+use types::AssetConfig;
+use flashloan::execute_flash_loan;
 use std::str::FromStr;
 use solana_sdk::pubkey::Pubkey;
 
@@ -17,37 +21,43 @@ const SOL_LIQUIDITY_SUPPLY: &str = "8UviNr47S8eL6J3WfDxMRa3hvLta1VDJwNWqsDgtN3Cv
 const USDC_LIQUIDITY_MINT: &str = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
 const SOL_LIQUIDITY_MINT: &str = "So11111111111111111111111111111111111111112";
 
+const FEE_RECEIVER: &str = "9RuqAN42PTUi9ya59k9suGATrkqzvb9gk2QABJtQzGP5";
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv::dotenv().ok();
-    
-    let rpc_url: String = std::env::var("RPC_URL").expect("RPC_URL does not determine in .env");
-    let private_key: String = std::env::var("PRIVATE_KEY").expect("PRIVATE_KEY does not determine in .env");
-    let loan_amount: u64 = 1_000_000; 
+    let rpc_url: String = std::env::var("RPC_URL")?;
+    let private_key: String = std::env::var("PRIVATE_KEY")?;
 
     let program_id = Pubkey::from_str(PROGRAM_ID_STR)?;
     let lending_market = Pubkey::from_str(LENDING_MARKET_STR)?;
     let vault = Pubkey::from_str(VAULT_STR)?;
 
-    let reserve_account = Pubkey::from_str(USDC_RESERVE)?; 
-    let reserve_liquidity_supply = Pubkey::from_str(USDC_LIQUIDITY_SUPPLY)?; 
-    let liquidity_mint = Pubkey::from_str(USDC_LIQUIDITY_MINT)?; 
+    
+    let loan_amount: u64 = 1_000_000;
+    let asset: AssetConfig = AssetConfig {
+        reserve: Pubkey::from_str(USDC_RESERVE)?,
+        liquidity_supply: Pubkey::from_str(USDC_LIQUIDITY_SUPPLY)?,
+        liquidity_mint: Pubkey::from_str(USDC_LIQUIDITY_MINT)?,
+        is_sol: false,
+    };
 
+    let fee_receiver: Pubkey = Pubkey::from_str(FEE_RECEIVER)?;
 
-    match flashloan::execute_flash_loan(
+    match execute_flash_loan(
         &rpc_url, 
         &private_key, 
         loan_amount,
         program_id,
         lending_market,
         vault,
-        reserve_account, 
-        reserve_liquidity_supply, 
-        liquidity_mint)
+        asset,
+        fee_receiver)
             .await 
     {
         Ok(_) => {},
         Err(e) => eprintln!("process crashed with error: {:?}", e),
     }
     Ok(())
+   
 }
