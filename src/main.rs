@@ -1,7 +1,11 @@
 mod types;
 mod flashloan;
 
-use types::AssetConfig;
+use types::{
+    AssetConfig,
+    ProtocolConfig,
+    User
+};
 use flashloan::execute_flash_loan;
 use std::str::FromStr;
 use solana_sdk::pubkey::Pubkey;
@@ -26,38 +30,31 @@ const FEE_RECEIVER: &str = "9RuqAN42PTUi9ya59k9suGATrkqzvb9gk2QABJtQzGP5";
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv::dotenv().ok();
-    let rpc_url: String = std::env::var("RPC_URL")?;
-    let private_key: String = std::env::var("PRIVATE_KEY")?;
-
-    let program_id = Pubkey::from_str(PROGRAM_ID_STR)?;
-    let lending_market = Pubkey::from_str(LENDING_MARKET_STR)?;
-    let vault = Pubkey::from_str(VAULT_STR)?;
-
     
-    let loan_amount: u64 = 1_000_000;
+    let user: User = User {
+        rpc_url: std::env::var("RPC_URL")?,
+        private_key: std::env::var("PRIVATE_KEY")?
+    };
+
+    let protocol_config: ProtocolConfig = ProtocolConfig { 
+        program_id: Pubkey::from_str(PROGRAM_ID_STR)?, 
+        lending_market: Pubkey::from_str(LENDING_MARKET_STR)?, 
+        vault: Pubkey::from_str(VAULT_STR)?, 
+        fee_receiver: Pubkey::from_str(FEE_RECEIVER)? 
+    };
+
     let asset: AssetConfig = AssetConfig {
+        loan_amount: 1_000_000,
         reserve: Pubkey::from_str(USDC_RESERVE)?,
         liquidity_supply: Pubkey::from_str(USDC_LIQUIDITY_SUPPLY)?,
         liquidity_mint: Pubkey::from_str(USDC_LIQUIDITY_MINT)?,
         is_sol: false,
     };
 
-    let fee_receiver: Pubkey = Pubkey::from_str(FEE_RECEIVER)?;
-
-    match execute_flash_loan(
-        &rpc_url, 
-        &private_key, 
-        loan_amount,
-        program_id,
-        lending_market,
-        vault,
-        asset,
-        fee_receiver)
-            .await 
-    {
+    match execute_flash_loan(user, protocol_config, asset).await {
         Ok(_) => {},
         Err(e) => eprintln!("process crashed with error: {:?}", e),
     }
+    
     Ok(())
-   
 }
