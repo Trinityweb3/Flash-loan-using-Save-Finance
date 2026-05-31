@@ -1,6 +1,9 @@
-use crate::types::AssetConfig;
+use crate::types::{
+    AssetConfig,
+    ProtocolConfig,
+    User
+};
 
-use std::str::FromStr;
 use solana_client::nonblocking::rpc_client::RpcClient; // for async feature
 use solana_sdk::commitment_config::CommitmentConfig;
 use solana_sdk::{
@@ -10,33 +13,28 @@ use solana_sdk::{
     signer::Signer,
     transaction::Transaction,
 };
-use spl_associated_token_account::instruction::create_associated_token_account_idempotent;
 
+use spl_associated_token_account::instruction::create_associated_token_account_idempotent;
 use solana_sdk::system_instruction;
 use spl_token::instruction::sync_native;
 use spl_associated_token_account::get_associated_token_address;
 
 
 
-pub async fn execute_flash_loan(
-    rpc_url: &str,
-    private_key_str: &str,
-    loan_amount: u64,
-
-    program_id: Pubkey,
-    lending_market: Pubkey,
-    vault: Pubkey,
-    
-    asset: AssetConfig,
-    fee_receiver: Pubkey
-) -> Result<(), Box<dyn std::error::Error>> {
-    let client = RpcClient::new_with_commitment(rpc_url.to_string(), CommitmentConfig::confirmed());
-    let payer = Keypair::from_base58_string(&private_key_str);
+pub async fn execute_flash_loan(user: User, protocol_config: ProtocolConfig, asset: AssetConfig) -> Result<(), Box<dyn std::error::Error>> {
+    let client: RpcClient = RpcClient::new_with_commitment(user.rpc_url, CommitmentConfig::confirmed());
+    let payer: Keypair = Keypair::from_base58_string(&user.private_key);
     println!("Using wallet: {}", payer.pubkey());
 
-    let liquidity_mint = asset.liquidity_mint;
-    let reserve_account = asset.reserve;
-    let reserve_liquidity_supply = asset.liquidity_supply;
+    let lending_market: Pubkey = protocol_config.lending_market;
+    let fee_receiver: Pubkey = protocol_config.fee_receiver;
+    let vault: Pubkey = protocol_config.vault;
+    let program_id: Pubkey = protocol_config.program_id;
+
+    let liquidity_mint: Pubkey = asset.liquidity_mint;
+    let reserve_account: Pubkey = asset.reserve;
+    let reserve_liquidity_supply: Pubkey = asset.liquidity_supply;
+    let loan_amount: u64 = asset.loan_amount;
 
     if asset.is_sol == true {
         let user_token_account = spl_associated_token_account::get_associated_token_address(
